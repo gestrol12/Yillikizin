@@ -1,0 +1,1993 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Etkinlik Takvimi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Genel Stiller */
+        body {
+            background-color: #f8f9fa;
+            /* Açık gri arkaplan */
+            font-family: "Roboto", sans-serif;
+            /* Roboto yazı tipi */
+            min-height: 100vh;
+            /* Minimum tam ekran yüksekliği */
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #343a40;
+            /* Varsayılan metin rengi */
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background-color: #ffffff;
+            /* Beyaz container arkaplanı */
+            border-radius: 12px;
+            /* Yuvarlak köşeler */
+            box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+            /* Varsayılan Bootstrap gölge */
+            padding: 30px;
+            box-sizing: border-box;
+        }
+
+        h2,
+        h3,
+        h4 {
+            color: #343a40;
+            /* Başlık rengi */
+            font-weight: 500;
+            /* Başlık font ağırlığı */
+        }
+
+        /* Takvim Stilleri */
+        .calendar {
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            /* Köşelerin taşmamasını sağla */
+        }
+
+        .calendar table {
+            table-layout: fixed;
+            /* Sabit sütun genişliği */
+            width: 100%;
+            border-collapse: collapse;
+            /* Kenarlıkları birleştir */
+            /* border-spacing: 0; */
+        }
+
+        .calendar th,
+        .calendar td {
+            text-align: center;
+            vertical-align: top;
+            /* İçeriği üste hizala */
+            height: 110px;
+            /* Hücre yüksekliği */
+            border: 1px solid #dee2e6;
+            /* Varsayılan Bootstrap kenarlık */
+            padding: 5px;
+            /* İç boşluk */
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            /* Geçiş efektleri */
+            box-sizing: border-box;
+            z-index: 0;
+            font-size: 0.9em;
+            /* Genel hücre metin boyutu */
+        }
+
+        /* Gün numarası */
+        .calendar td>div:first-child {
+            position: absolute;
+            /* Mutlak konumlandırma */
+            top: 5px;
+            /* Sağ üst köşe */
+            right: 5px;
+            z-index: 3;
+            /* En üstte görünsün */
+            font-weight: 700;
+            /* Kalın yaz */
+            font-size: 1.2em;
+            /* Daha büyük */
+            color: #343a40;
+            /* Koyu renk */
+        }
+
+        /* Hücre hover efekti (seçili/tatil/geçmiş/boş olmayanlar hariç) */
+        .calendar td:hover:not(.active-day):not(.holiday-day):not(.to-delete):not(:empty):not(.past-day) {
+            background-color: #e9ecef;
+            /* Varsayılan Bootstrap hover rengi */
+        }
+
+        /* Seçili gün (eklemek için) */
+        .active-day {
+            background-color: #0077b6 !important;
+            /* Mavi arkaplan */
+            color: #ffffff !important;
+            /* Beyaz yazı */
+            border-radius: 0 !important;
+            /* Köşesiz */
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Seçili gün kenarlık efekti */
+        .active-day::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 8px;
+            /* Köşelerle uyumlu */
+            border: 2px solid #0077b6;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Tatil günü */
+        .holiday-day {
+            background-color: #f8d7da !important;
+            /* Varsayılan Bootstrap danger light rengi */
+            color: #721c24 !important;
+            /* Varsayılan Bootstrap danger dark metin rengi */
+            border-radius: 0 !important;
+            position: relative;
+        }
+
+        /* Tatil ve Seçili Gün (Hem tatil hem seçiliyse mavi olsun) */
+        .holiday-day.active-day {
+            background-color: #0077b6 !important;
+            color: #ffffff !important;
+        }
+
+        .holiday-day.active-day::after {
+            border-color: #0077b6 !important;
+        }
+
+        /* Silinecek olarak seçilen gün (Vurgu Eklendi) */
+        .to-delete {
+            border: 2px dashed #dc3545 !important;
+            /* Kırmızı kesik çizgi kenarlık */
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Silinecek ve Seçili Gün (Bu durum olmamalı ama tanımleyelim) */
+        .to-delete.active-day {
+            background-color: #0077b6 !important;
+            /* Mavi arkaplan */
+            color: #ffffff !important;
+            /* Beyaz yazı */
+            border: 2px solid #0077b6 !important;
+            /* Mavi düz kenarlık */
+        }
+
+        /* Tatil adı */
+        .holiday-day .holiday-name {
+            background: none;
+            color: inherit;
+            /* Tatil gününün kendi rengini alsın */
+            padding: 0;
+            font-size: 0.9em;
+            font-weight: 500;
+            pointer-events: none;
+            position: absolute;
+            top: 25px;
+            /* Gün numarasının altına boşluk */
+            left: 0;
+            right: 0;
+            text-align: center;
+            z-index: 2;
+        }
+
+        /* Etkinlik kaplama stili */
+        .event-overlay {
+            position: absolute;
+            top: 50px;
+            /* Gün ve tatil adının altına başla */
+            left: 0;
+            /* Kenarlardan boşluk yok */
+            right: 0;
+            /* Kenarlardan boşluk yok */
+            bottom: 0;
+            /* Alttan boşluk yok */
+            border-radius: 0 0 8px 8px;
+            /* Köşelerle uyumlu */
+            z-index: 1;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            /* Üstten başla */
+            align-items: center;
+            padding: 5px;
+            /* İç boşluk */
+            box-sizing: border-box;
+            font-size: 0.9em;
+            /* Etkinlik metin boyutu */
+            font-weight: 400;
+            color: #343a40;
+            /* Koyu metin */
+            line-height: 1.2;
+            overflow: hidden;
+            text-align: center;
+            /* Metni ortala */
+        }
+
+        /* Etkinlik kaplama içindeki metin (etkinlik adı ve kullanıcı) */
+        .event-overlay>div {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-break: break-word;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            /* Metni 2 satırla sınırla */
+            -webkit-box-orient: vertical;
+            line-height: 1.3;
+            /* Satır yüksekliği */
+            width: 100%;
+            /* Tam genişlik kullan */
+        }
+
+        .event-overlay small {
+            font-size: 0.8em;
+            /* Kullanıcı adı daha küçük */
+            font-weight: 400;
+            color: #5a6268;
+            /* Daha soluk kullanıcı adı rengi */
+            display: block;
+            /* Alt satıra al */
+            margin-top: 0;
+            /* Üstten boşluk kaldırıldı */
+        }
+
+        /* Kullanıcı renkleri için şeffaf arka planlar */
+        .event-overlay.bg-primary {
+            background-color: rgba(0, 123, 255, 0.15) !important;
+        }
+
+        .event-overlay.bg-success {
+            background-color: rgba(40, 167, 69, 0.15) !important;
+        }
+
+        .event-overlay.bg-warning {
+            background-color: rgba(255, 193, 7, 0.15) !important;
+            color: #343a40 !important;
+        }
+
+        .event-overlay.bg-info {
+            background-color: rgba(23, 162, 184, 0.15) !important;
+        }
+
+        .event-overlay.bg-secondary {
+            background-color: rgba(108, 117, 125, 0.15) !important;
+        }
+
+        /* Modern Butonlar */
+        .btn-modern {
+            background-color: #0077b6;
+            color: #ffffff;
+            border: none;
+            transition: all 0.3s ease;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-modern:not(:disabled):hover {
+            background-color: #005f99;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            color: #ffffff;
+        }
+
+        .btn-modern:not(:disabled):active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        /* Daire Butonlar */
+        .btn-circle {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            background-color: #0077b6;
+            color: #ffffff;
+            font-size: 24px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-circle:not(:disabled):hover {
+            background-color: #005f99;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            color: #ffffff;
+        }
+
+        .btn-circle:not(:disabled):active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        /* Başlık ve Kontroller Alanı */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header>div:first-child {
+            flex-grow: 0;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+
+        /* Kullanıcı arama/göster alanı */
+        .controls .d-flex.gap-2 {
+            gap: 10px !important;
+            align-items: center;
+        }
+
+        .controls .form-select-sm,
+        .controls .btn-sm {
+            padding-top: 0.375rem;
+            padding-bottom: 0.375rem;
+        }
+
+        #welcomeUser {
+            margin-bottom: 5px;
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: #343a40;
+        }
+
+        #notification {
+            min-height: 20px;
+            margin-bottom: 15px;
+        }
+
+        .alert {
+            padding: 0.75rem 1.25rem;
+        }
+
+        .badge-modern {
+            font-size: 1em;
+            padding: 0.5em 1em;
+            border-radius: 0.5rem;
+            background-color: #0077b6;
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        #remainingDays {
+            font-size: 1.1em;
+            padding: 0.6em 1.2em;
+            min-width: auto;
+            text-align: center;
+        }
+
+        /* Kullanıcı renkleri legend stili */
+        .color-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            font-size: 0.9em;
+            color: #343a40;
+        }
+
+        .color-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .color-box {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+            box-shadow: none;
+        }
+
+        /* Legend için opak renkler */
+        .color-box.bg-primary {
+            background-color: #007bff !important;
+        }
+
+        .color-box.bg-success {
+            background-color: #28a745 !important;
+        }
+
+        .color-box.bg-warning {
+            background-color: #ffc107 !important;
+        }
+
+        .color-box.bg-info {
+            background-color: #17a2b8 !important;
+        }
+
+        .color-box.bg-secondary {
+            background-color: #6c757d !important;
+        }
+
+        .card-modern {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+        }
+
+        /* Hücre içindeki sil butonu */
+        .calendar td .btn-sm.btn-danger {
+            padding: 0.2rem 0.5rem;
+            font-size: 0.75rem;
+            border-radius: 0.3rem;
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            line-height: 1;
+            z-index: 4;
+            opacity: 1;
+            transition: none;
+        }
+
+        /* Takvim başlık günleri */
+        .calendar th {
+            background-color: #e9ecef;
+            font-weight: 500;
+            color: #495057;
+            padding: 5px;
+        }
+
+        /* Boş hücreler */
+        .calendar td.empty-day {
+            background-color: #f8f9fa;
+            border: none;
+            pointer-events: none;
+        }
+
+        .calendar td:empty {
+            background-color: #f8f9fa;
+            border: none;
+            pointer-events: none;
+        }
+
+        /* Geçmiş günler */
+        .calendar td.past-day {
+            pointer-events: none;
+            background-color: #e9ecef !important;
+            color: #adb5bd !important;
+            border-color: #dee2e6 !important;
+        }
+
+        /* Datepicker input stili */
+        .flatpickr-input {
+            display: inline-block;
+            width: auto;
+            text-align: center;
+            cursor: pointer;
+            background-color: transparent;
+            border: none;
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #343a40;
+            padding: 0 5px;
+        }
+
+        /* Flatpickr takvim ikonu gizleme */
+        .flatpickr-wrapper {
+            display: inline-block;
+        }
+
+        .flatpickr-input[data-original-input] {
+            display: none;
+        }
+
+        .flatpickr-calendar {
+            z-index: 1050;
+        }
+
+        /* Tooltip Stili */
+        .tooltip-inner {
+            background-color: #343a40;
+            color: #ffffff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            max-width: none;
+            text-align: left;
+        }
+
+        .tooltip.bs-tooltip-top .tooltip-arrow::before {
+            border-top-color: #343a40;
+        }
+
+        .tooltip.bs-tooltip-bottom .tooltip-arrow::before {
+            border-bottom-color: #343a40;
+        }
+
+        .tooltip.bs-tooltip-start .tooltip-arrow::before {
+            border-start-color: #343a40;
+        }
+
+        .tooltip.bs-tooltip-end .tooltip-arrow::before {
+            border-end-color: #343a40;
+        }
+
+        /* Modal içindeki etkinlik listesi */
+        .event-list-item {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 1em;
+        }
+
+        .event-list-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .event-list-item strong {
+            color: #0077b6;
+            margin-right: 0;
+        }
+
+        /* Modal body scroll */
+        .modal-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        /* Navbar stilleri */
+        .navbar {
+            background-color: #0077b6;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            margin-bottom: 20px;
+        }
+
+        .navbar-brand {
+            color: #ffffff;
+            font-size: 1.5rem;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .navbar-nav {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .nav-link {
+            color: #ffffff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: #bbd0ff;
+        }
+
+        .admin-panel-button {
+            margin-left: auto;
+            /* Sağa yaslamak için */
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div id="loginSection">
+            <h2 class="text-center mb-4">Etkinlik Takvimi</h2>
+            <div class="card card-modern mx-auto p-4" style="max-width: 400px">
+                <h4 class="mb-3">Giriş Yap</h4>
+                <form id="loginForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Kullanıcı Adı</label>
+                        <select id="username" class="form-select" required>
+                            <option value="">Seçiniz</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="pinCode" class="form-label">Pin Kodu</label>
+                        <input type="password" id="pinCode" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-modern btn-lg w-100">Giriş Yap</button>
+                    <div id="loginError" class="alert alert-danger mt-3 d-none"></div>
+                </form>
+            </div>
+        </div>
+
+        <div id="calendarSection" class="d-none">
+            <nav class="navbar">
+                <a class="navbar-brand" href="#">Etkinlik Takvimi</a>
+                <ul class="navbar-nav">
+                    <li><a class="nav-link" href="#" id="changePinBtn">Pin Değiştir</a></li>
+                    <li><a class="nav-link" href="#" id="logoutBtn">Çıkış</a></li>
+                </ul>
+            </nav>
+
+            <div class="header">
+                <div>
+                    <h3 id="welcomeUser"></h3>
+                    <div id="notification"></div>
+                </div>
+                <div class="controls">
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <label for="userSearchSelect" class="form-label mb-0">Kullanıcı Etkinlikleri:</label>
+                        <select id="userSearchSelect" class="form-select form-select-sm w-auto">
+                            <option value="">Seçiniz</option>
+                        </select>
+                        <button id="showUserEventsBtn" class="btn btn-sm btn-secondary">Göster</button>
+                    </div>
+                    <button id="saveEvent" class="btn btn-modern">Etkinliği Kaydet</button>
+                    <button id="deleteSelected" class="btn btn-danger d-none">Seçilenleri Sil</button>
+
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <button id="prevMonth" class="btn btn-circle">←</button>
+                <div class="d-flex align-items-center" style="gap: 5px;">
+                    <select id="yearSelect" class="form-select form-select-sm w-auto"></select>
+                    <input type="text" id="monthYearPicker" class="form-control form-control-sm" readonly>
+                </div>
+                <div id="remainingDays" class="badge badge-modern fs-6"></div>
+                <button id="nextMonth" class="btn btn-circle">→</button>
+            </div>
+
+            <div id="calendarContainer" class="calendar"></div>
+
+            <div class="color-legend">
+                <span class="fw-bold me-2">Renk Açıklaması:</span>
+            </div>
+        </div>
+
+        <!-- Kullanıcı Etkinlikleri Modal -->
+        <div class="modal fade" id="userEventsModal" tabindex="-1" aria-labelledby="userEventsModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="userEventsModalLabel">Kullanıcı Etkinlikleri</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <ul id="userEventsList" class="list-unstyled">
+                        </ul>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yönetici Paneli Modal -->
+        <div class="modal fade" id="adminPanelModal" tabindex="-1" aria-labelledby="adminPanelModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="adminPanelModalLabel">Yönetici Paneli</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <h4>Kullanıcı Yönetimi</h4>
+                        <div class="mb-3">
+                            <label for="newUsername" class="form-label">Yeni Kullanıcı Adı</label>
+                            <input type="text" class="form-control" id="newUsername">
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPin" class="form-label">Yeni Pin Kodu</label>
+                            <input type="password" class="form-control" id="newPin">
+                        </div>
+                        <div class="mb-3">
+                            <label for="newRole" class="form-label">Rol</label>
+                            <select class="form-select" id="newRole">
+                                <option value="Kullanıcı">Kullanıcı</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                        </div>
+                        <button id="addUserBtn" class="btn btn-success">Kullanıcı Ekle</button>
+
+                        <hr>
+
+                        <h4>Kullanıcı Silme / Pin Sıfırlama</h4>
+                        <div class="mb-3">
+                            <label for="existingUsers" class="form-label">Kullanıcı Seç</label>
+                            <select class="form-select" id="existingUsers">
+                                <option value="">Seçiniz</option>
+                            </select>
+                        </div>
+                        <button id="deleteUserBtn" class="btn btn-danger">Kullanıcı Sil</button>
+                        <button id="resetPinBtn" class="btn btn-warning">Pin Sıfırla</button>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pin Değiştirme Modal -->
+        <div class="modal fade" id="changePinModal" tabindex="-1" aria-labelledby="changePinModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="changePinModalLabel">Pin Değiştir</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="currentPin" class="form-label">Mevcut Pin</label>
+                            <input type="password" class="form-control" id="currentPin" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPin1" class="form-label">Yeni Pin</label>
+                            <input type="password" class="form-control" id="newPin1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPin2" class="form-label">Yeni Pini Tekrar Girin</label>
+                            <input type="password" class="form-control" id="newPin2" required>
+                        </div>
+                        <div id="pinChangeError" class="alert alert-danger mt-3 d-none"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                        <button id="saveNewPinBtn" class="btn btn-primary">Kaydet</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/tr.js"></script>
+    <script>
+        const holidays = {
+            "2025-01-01": "Yılbaşı",
+            "2025-04-23": "23 Nisan",
+            "2025-05-01": "Emek ve Dayanışma",
+            "2025-05-19": "19 Mayıs",
+            "2025-07-15": "15 Temmuz",
+            "2025-08-30": "30 Ağustos",
+            "2025-10-29": "29 Ekim",
+            "2025-04-12": "Ramazan Bayramı 1.",
+            "2025-04-13": "Ramazan Bayramı 2.",
+            "2025-04-14": "Ramazan Bayramı 3.",
+            // Kurban Bayramı 2025 tarihleri güncellendi
+            "2025-06-05": "Kurban Bayramı Arefesi",
+            "2025-06-06": "Kurban Bayramı 1.",
+            "2025-06-07": "Kurban Bayramı 2.",
+            "2025-06-08": "Kurban Bayramı 3.",
+            "2025-06-09": "Kurban Bayramı 4.",
+        };
+
+        const userColors = {
+            Ayla: "bg-primary", // Bootstrap renk sınıfları
+            Doruk: "bg-success",
+            Emre: "bg-warning",
+            Kalender: "bg-info",
+            Zek: "bg-secondary",
+        };
+
+        let currentUser = "";
+        let currentUserRole = "";
+        let selectedDates = []; // Etkinlik eklemek için seçilen günler (YYYY-MM-DD formatında string array)
+        let selectedForDelete = []; // Etkinlik silmek için seçilen günler (YYYY-MM-DD formatında string array)
+        let events = []; // Tüm etkinlikleri tutacak array [{ date: 'YYYY-MM-DD', user: 'Username', event: 'Event Name' }]
+
+        const today = new Date();
+        const todayYMD = new Date(today.getFullYear(), today.getMonth(), today.getDate()); // Bugünün Yıl-Ay-Gün olarak başlangıcı
+
+        let currentYear = today.getFullYear(); // Şu anki takvim yılı
+        let currentMonth = today.getMonth(); // Şu anki takvim ayı (0-11)
+
+
+        // DOM Referansları
+        const loginForm = document.getElementById("loginForm"),
+            usernameSel = document.getElementById("username"),
+            pinCodeInput = document.getElementById("pinCode"),
+            loginSec = document.getElementById("loginSection"),
+            calSec = document.getElementById("calendarSection"),
+            welcomeEl = document.getElementById("welcomeUser"),
+            logoutBtn = document.getElementById("logoutBtn"),
+            notif = document.getElementById("notification"),
+            prevBtn = document.getElementById("prevMonth"),
+            nextBtn = document.getElementById("nextMonth"),
+            calCont = document.getElementById("calendarContainer"),
+            saveBtn = document.getElementById("saveEvent"),
+            deleteBtn = document.getElementById("deleteSelected"),
+            remainDays = document.getElementById("remainingDays"),
+            loginError = document.getElementById("loginError");
+
+        // Yeni eklenen elemanlar
+        const userSearchSelect = document.getElementById("userSearchSelect"),
+            showUserEventsBtn = document.getElementById("showUserEventsBtn"),
+            userEventsModal = document.getElementById("userEventsModal"),
+            userEventsModalTitle = document.getElementById("userEventsModalLabel"),
+            userEventsList = document.getElementById("userEventsList"),
+            yearSelect = document.getElementById("yearSelect"), // Yıl seçimi dropdown'ı
+            monthYearPickerInput = document.getElementById("monthYearPicker"), // Datepicker inputu
+            colorLegendDiv = document.querySelector(".color-legend"), // Renk açıklaması alanı
+            adminPanelModal = document.getElementById("adminPanelModal"),
+            adminPanelModalEl = new bootstrap.Modal(adminPanelModal), // Yönetici paneli modalı
+            changePinModal = document.getElementById("changePinModal"),
+            changePinModalEl = new bootstrap.Modal(changePinModal),
+            changePinBtn = document.getElementById("changePinBtn"),
+            newUsernameInput = document.getElementById("newUsername"),
+            newPinInput = document.getElementById("newPin"),
+            newRoleSelect = document.getElementById("newRole"),
+            addUserBtn = document.getElementById("addUserBtn"),
+            existingUsersSelect = document.getElementById("existingUsers"),
+            deleteUserBtn = document.getElementById("deleteUserBtn"),
+            resetPinBtn = document.getElementById("resetPinBtn"),
+            saveNewPinBtn = document.getElementById("saveNewPinBtn"),
+            currentPinInput = document.getElementById("currentPin"),
+            newPin1Input = document.getElementById("newPin1"),
+            newPin2Input = document.getElementById("newPin2"),
+            pinChangeError = document.getElementById("pinChangeError");
+
+
+        // --- FLATPICKR (DATEPICKER) KURULUMU ---
+        // Datepicker sadece ay ve yıl seçimi için. input formatı "F Y" (Nisan 2025) olacak.
+        const fp = flatpickr(monthYearPickerInput, {
+            enableTime: false,
+            dateFormat: "Y-m-d", // Arka planda tutulacak format (isteğe bağlı, onChange ile yönetebiliriz)
+            altInput: true, // Kullanıcıya gösterilecek alternatif input kullan
+            altFormat: "F Y", // Kullanıcıya gösterilecek format (Örn: Nisan 2025)
+            static: true, // Açılan takvimin pozisyonu sabit kalsın
+            locale: "tr", // Türkçe dil desteği
+            // minDate: "today", // Geçmiş tarihleri seçme - Yıl seçimi ile çakışabilir, kaldırıldı. Past-day CSS ve JS kontrolü yeterli.
+            onChange: function (selectedDates, dateStr, instance) {
+                console.log("Flatpickr tarih değişti:", dateStr);
+                if (selectedDates.length > 0) {
+                    const selectedDate = selectedDates[0];
+                    const newMonth = selectedDate.getMonth();
+                    const newYear = selectedDate.getFullYear();
+
+                    // currentYear ve currentMonth zaten fp'nin iç state'ini yansıtıyor olmalı.
+                    // Ama emin olmak için tekrar set edelim:
+                    currentYear = selectedDate.getFullYear();
+                    currentMonth = selectedDate.getMonth();
+
+                    // Yıl dropdown'ını senkronize et
+                    yearSelect.value = currentYear;
+
+                    clearSelections();
+                    renderCalendar(); // Takvimi yeni ay/yıla göre çiz
+                }
+            }
+        });
+
+        // Başlangıçta Flatpickr'ı mevcut aya ayarla
+        fp.setDate(new Date(currentYear, currentMonth, 1));
+
+        // --- YIL SEÇİMİ DROPDOWN'UNU DOLDURMA ---
+        function populateYearSelect() {
+            const currentYearFull = today.getFullYear();
+            const startYear = currentYearFull - 2; // Geçmiş 2 yıl
+            const endYear = currentYearFull + 10; // Gelecek 10 yıl
+
+            yearSelect.innerHTML = ""; // Dropdown'ı temizle
+
+            for (let i = startYear; i <= endYear; i++) {
+                const option = document.createElement("option");
+                option.value = i;
+                option.textContent = i;
+                if (i === currentYear) {
+                    option.selected = true;
+                }
+                yearSelect.appendChild(option);
+            }
+            console.log(`Yıl dropdown'ı dolduruldu: ${startYear}-${endYear}`);
+        }
+        populateYearSelect(); // Sayfa yüklendiğinde dropdown'ı doldur
+
+        // Yıl seçimi değiştiğinde takvimi güncelle
+        yearSelect.addEventListener("change", (e) => {
+            const newYear = parseInt(e.target.value, 10);
+            if (newYear !== currentYear) {
+                currentYear = newYear;
+                // Yıl değişince ayı mevcut ay olarak bırakabiliriz.
+                // Eğer seçilen yıl bugünün yılından küçükse ve mevcut ay geçmişteyse, ayı Ocak (0) yapalım
+                const todayObj = new Date();
+                if (currentYear < todayObj.getFullYear() && currentMonth < todayObj.getMonth()) {
+                    currentMonth = 0; // Geçmiş yıla gidiliyorsa Ocak ayını göster
+                } else if (currentYear === todayObj.getFullYear() && currentMonth < todayObj.getMonth()) {
+                    // Mevcut yıla dönüldüğünde ve mevcut ay geçmişteyse, bugünün ayını göster
+                    currentMonth = todayObj.getMonth();
+                }
+                // Aksi halde mevcut ayı koru
+
+                console.log(`Yıl değişti: ${currentYear}, Ay: ${currentMonth + 1}`);
+                clearSelections();
+                renderCalendar(); // Takvimi yeni yıla ve aya göre çiz
+                // Flatpickr'ı senkronize et
+                fp.setDate(new Date(currentYear, currentMonth, 1), true);
+
+            }
+        });
+
+        // --- KULLANICI RENK AÇIKLAMASI (LEGEND) DOLDURMA ---
+        function populateColorLegend() {
+            colorLegendDiv.innerHTML = '<span class="fw-bold me-2">Renk Açıklaması:</span>'; // Başlığı tekrar ekle
+
+            for (const user in userColors) {
+                if (userColors.hasOwnProperty(user)) {
+                    const legendItem = document.createElement("div");
+                    legendItem.className = "color-legend-item";
+
+                    const colorBox = document.createElement("span");
+                    // Legend için tam opak Bootstrap renk sınıfını kullan
+                    colorBox.className = `color-box ${userColors[user]}`;
+
+                    const userName = document.createTextNode(user);
+
+                    legendItem.appendChild(colorBox);
+                    legendItem.appendChild(userName);
+                    colorLegendDiv.appendChild(legendItem);
+                }
+            }
+            console.log("Renk açıklaması dolduruldu.");
+        }
+        // populateColorLegend(); // Login sonrası çağrılacak
+
+        // --- GİRİŞ / ÇIKIŞ VE ANA YÜKLEME AKIŞI ---
+        loginForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const u = usernameSel.value;
+            const p = pinCodeInput.value;
+
+            // Kullanıcıları ve rolleri yükle
+            google.script.run
+                .withSuccessHandler(function (result) {
+                    if (result.success) {
+                        const users = result.users;
+                        const user = users.find(user => user.username === u);
+
+                        if (user && user.pin === p) {
+                            currentUser = u;
+                            currentUserRole = user.role;
+
+                            console.log(`Kullanıcı Girişi: ${currentUser} (Rol: ${currentUserRole})`);
+                            welcomeEl.textContent = `Hoş geldin, ${u} (${currentUserRole})`;
+                            loginSec.classList.add("d-none");
+                            calSec.classList.remove("d-none");
+                            loginError.classList.add("d-none"); // Hata mesajını gizle
+
+                            // Yönetici paneli butonunu ekle/kaldır
+                            if (currentUserRole === "Admin") {
+                                // Admin paneli butonu oluştur ve navbar'a ekle
+                                const adminPanelButton = document.createElement("button");
+                                adminPanelButton.textContent = "Yönetici Paneli";
+                                adminPanelButton.className = "btn btn-sm btn-secondary admin-panel-button";
+                                adminPanelButton.onclick = () => {
+                                    populateExistingUsers(); // Kullanıcıları yükle
+                                    adminPanelModalEl.show(); // Modal'ı göster
+                                };
+                                document.querySelector(".navbar-nav").appendChild(adminPanelButton);
+                            } else {
+                                // Admin değilse butonu kaldır
+                                const adminPanelButton = document.querySelector(".admin-panel-button");
+                                if (adminPanelButton) {
+                                    adminPanelButton.remove();
+                                }
+                            }
+
+                            // Giriş yapınca mevcut ayı ve yılı ayarla ve UI'ı güncelle
+                            currentYear = today.getFullYear();
+                            currentMonth = today.getMonth();
+
+                            populateYearSelect(); // Yıl dropdown'ını doldur ve mevcut yıla ayarla
+                            yearSelect.value = currentYear; // Dropdown değerini set et
+                            fp.setDate(new Date(currentYear, currentMonth, 1), true); // Datepicker'ı mevcut aya ayarla
+
+                            populateColorLegend(); // Renk legend'ını doldur
+                            clearSelections(); // Önceki seçimleri temizle
+                            loadEvents(); // Etkinlikleri yükle ve takvimi çiz
+                            loadUsers(); // Kullanıcıları yükle (selectbox'lar için)
+
+                        } else {
+                            loginError.textContent = "Kullanıcı adı veya pin kodu hatalı.";
+                            loginError.classList.remove("d-none");
+                            console.log("Hata: Kullanıcı adı veya pin kodu hatalı.");
+                        }
+                    } else {
+                        loginError.textContent = result.message || "Kullanıcılar yüklenirken bir hata oluştu.";
+                        loginError.classList.remove("d-none");
+                        console.error("Hata: Kullanıcılar yüklenemedi.", result.message);
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    loginError.textContent = "Sunucu hatası. Lütfen daha sonra tekrar deneyin.";
+                    loginError.classList.remove("d-none");
+                    console.error("Sunucu hatası (getUsers):", err);
+                })
+                .getUsers();
+        });
+
+        logoutBtn.onclick = () => {
+            console.log(`Kullanıcı Çıkışı: ${currentUser}`);
+            clearSelections();
+            calSec.classList.add("d-none");
+            loginSec.classList.remove("d-none");
+            welcomeEl.textContent = "";
+            notif.innerHTML = "";
+            remainDays.textContent = "";
+            calCont.innerHTML = "";
+            events = []; // Çıkışta etkinlikleri temizle
+            currentUser = "";
+            currentUserRole = "";
+            // Arama selectbox'ını sıfırla
+            userSearchSelect.value = "";
+            // Legend'ı temizle
+            colorLegendDiv.innerHTML = "";
+            // Yıl dropdown'ını sıfırla (veya varsayılanı göster)
+            populateYearSelect(); // Varsayılan yılları tekrar doldur
+            yearSelect.value = today.getFullYear(); // Yıl dropdown'ını bugünün yılına ayarla
+            currentYear = today.getFullYear(); // currentYear'ı da sıfırla
+            currentMonth = today.getMonth(); // currentMonth'u da sıfırla
+            fp.setDate(new Date(currentYear, currentMonth, 1), true); // Datepicker'ı da sıfırla
+
+            // Admin panel butonunu kaldır (eğer varsa)
+            const adminPanelButton = document.querySelector(".admin-panel-button");
+            if (adminPanelButton) {
+                adminPanelButton.remove();
+            }
+        };
+
+        prevBtn.onclick = () => {
+            console.log("Önceki ay butonuna basıldı.");
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11; // Aralık
+                currentYear--; // Bir önceki yıla geç
+                populateYearSelect(); // Yıl dropdown'ını güncelle (yeni yıl eklemek için)
+                yearSelect.value = currentYear; // Dropdown değerini set et
+            }
+            console.log(`Yeni ay/yıl: ${currentMonth + 1}/${currentYear}`);
+            clearSelections();
+            renderCalendar();
+            fp.setDate(new Date(currentYear, currentMonth, 1), true); // Datepicker'ı senkronize et
+        };
+
+        nextBtn.onclick = () => {
+            console.log("Sonraki ay butonuna basıldı.");
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0; // Ocak
+                currentYear++; // Bir sonraki yıla geç
+                populateYearSelect(); // Yıl dropdown'ını güncelle (yeni yıl eklemek için)
+                yearSelect.value = currentYear; // Dropdown değerini set et
+            }
+            console.log(`Yeni ay/yıl: ${currentMonth + 1}/${currentYear}`);
+            clearSelections();
+            renderCalendar();
+            fp.setDate(new Date(currentYear, currentMonth, 1), true); // Datepicker'ı senkronize et
+        };
+
+
+        saveBtn.onclick = () => {
+            console.log("Etkinliği Kaydet butonuna basıldı.");
+            console.log("Başlangıç selectedDates:", [...selectedDates]);
+
+            const used = events.filter((e) => e.user === currentUser).length;
+            const remain = 14 - used;
+            console.log(`Kullanılan gün: ${used}, Kalan hak: ${remain}`);
+
+            if (!selectedDates.length) {
+                notify("En az bir gün seçin.", "warning");
+                console.log("Hata: Seçili gün yok.");
+                return;
+            }
+
+            // Seçilen günler arasında zaten BAŞKASININ etkinliği içerenleri bul
+            const existingOtherEventDates = selectedDates.filter(date =>
+                events.some(e => e.date === date && e.user !== currentUser)
+            );
+
+            console.log("Başkasının etkinliği olan seçili günler:", [...existingOtherEventDates]);
+
+            if (existingOtherEventDates.length > 0) {
+                const datesStr = existingOtherEventDates.map(d => {
+                    const parts = d.split('-');
+                    return `${parts[2]}/${parts[1]}`; // GG/AA formatı
+                }).join(', ');
+
+                // Başkasının etkinliği olan günlerin seçimini kaldır (sadece UI'dan değil, selectedDates'ten de)
+                existingOtherEventDates.forEach(date => {
+                    const td = calCont.querySelector(`td[data-date="${date}"]`);
+                    if (td) {
+                        td.classList.remove('active-day');
+                    }
+                });
+                selectedDates = selectedDates.filter(date => !existingOtherEventDates.includes(date));
+
+                console.log("Başkasının etkinliği olan günler çıkarıldıktan sonra selectedDates:", [...selectedDates]);
+
+                if (!selectedDates.length) {
+                    notify(`Seçtiğiniz günlerden (${datesStr}) zaten başka kullanıcılara ait etkinlik içeriyor. Başka gün seçin.`, "warning");
+                    updateSaveButtonState();
+                    renderCalendar(); // Seçim kaldırıldığı için takvimi güncelle
+                    return;
+                } else {
+                    // Sadece uyarı ver, kalanları eklemeye devam et
+                    notify(`Seçtiğiniz günlerden (${datesStr}) başka kullanıcılara ait etkinlik içeriyor. Sadece kalan ${selectedDates.length} gün ekleniyor.`, "warning");
+                }
+            }
+
+            console.log("Başkasının etkinliği kontrolü sonrası selectedDates:", [...selectedDates]);
+
+            if (selectedDates.length > remain) {
+                // Kullanıcıya kalan haktan fazlasını seçtiğini bildir ve sadece kalan hak kadarını ekle
+                notify(`Sadece ${remain} gün ekleyebilirsiniz. Seçtiğiniz geçerli gün sayısı: ${selectedDates.length}. İlk ${remain} gün eklenecek.`, "warning");
+                // Seçimleri kalan hakka göre kırp
+                const excessDates = selectedDates.slice(remain);
+                selectedDates = selectedDates.slice(0, remain);
+                console.log("Kalan hak kontrolü sonrası selectedDates (kırpılmış):", [...selectedDates]);
+
+                // Kırpılan günlerin seçimini UI'dan kaldır
+                excessDates.forEach(date => {
+                    const td = calCont.querySelector(`td[data-date="${date}"]`);
+                    if (td) {
+                        td.classList.remove('active-day');
+                    }
+                });
+            }
+
+            if (!selectedDates.length) {
+                // Kırpma veya dolu gün çıkarma sonrası ekleyecek gün kalmadıysa
+                console.log("Hata: Kalan hakkınız yetersiz veya seçilenlerin tamamı doluydu, eklenecek gün kalmadı.");
+                notify("Ekleyecek uygun gün kalmadı.", "warning");
+                updateSaveButtonState();
+                renderCalendar(); // UI'ı güncelle
+                return;
+            }
+
+
+            notify(`Etkinlikler (${selectedDates.length} gün) ekleniyor...`, "info");
+            console.log("google.script.run.addEvents çağırılıyor...", {
+                dates: selectedDates,
+                user: currentUser
+            });
+
+            // --- APPS SCRIPT ÇAĞRISI: ADD EVENTS ---
+            google.script.run
+                .withSuccessHandler((res) => {
+                    console.log("addEvents Success:", res);
+                    let added = 0;
+                    let failed = 0;
+                    let messages = [];
+
+                    if (Array.isArray(res)) {
+                        res.forEach((r) => {
+                            if (r.success && r.event) { // Başarılı ve etkinlik objesi döndüyse
+                                // Sadece gerçekten yeni eklenenleri (API'nin döndürdükleri) events dizisine ekle
+                                if (!events.some(e => e.date === r.event.date && e.user === r.event.user)) {
+                                    events.push(r.event);
+                                    added++;
+                                } else {
+                                    console.warn(`Apps Script success döndürdü ancak etkinlik zaten listedeydi veya kopyaydı: ${r.event.date} - ${r.event.user}`);
+                                }
+                            } else {
+                                failed++;
+                                messages.push(r.message || `Etkinlik eklenemedi: ${r.date || 'Bilinmeyen Tarih'}`);
+                            }
+                        });
+                    } else {
+                        console.error("addEvents Apps Script yanıtı dizi değil veya beklenmedik formatta:", res);
+                        notify("Etkinlik ekleme işlemi tamamlandı ancak sunucudan beklenmedik yanıt geldi.", "warning");
+                    }
+
+                    if (selectedDates.length > 0 && added === 0 && failed === 0) {
+                        notify("Etkinlik ekleme işlemi başarısız oldu (Apps Script boş yanıt döndürdü).", "danger");
+                    } else if (added > 0) {
+                        notify(`${added} gün başarıyla eklendi.`, "success");
+                    }
+
+
+                    if (failed > 0) {
+                        notify(`${failed} gün eklenemedi: ${messages.join('; ')}`, "warning");
+                    }
+
+
+                    clearSelections(); // Seçimleri temizle
+                    // events dizisi güncellendi, UI'ı yeniden çiz
+                    renderCalendar();
+                    updateRemainingDays();
+
+                })
+                .withFailureHandler((error) => {
+                    console.error("Etkinlik ekleme hatası (Apps Script):", error);
+                    notify("Etkinlikler eklenirken bir hata oluştu (Apps Script hatası). Lütfen konsolu kontrol edin.", "danger");
+                    // Hata durumunda etkinlik listesini yeniden yüklemek veya UI'ı sıfırlamak iyi olabilir
+                    loadEvents(); // Etkinlikleri tekrar yükleyerek state'i senkronize et
+                    clearSelections(); // Hata olsa da seçimi temizle
+                })
+                // Apps Script tarafında `addEvents` fonksiyonunun çağrılması
+                .addEvents(selectedDates, currentUser, "Etkinlik"); // "Etkinlik" sabit metin olarak gidiyor
+        };
+
+        deleteBtn.onclick = () => {
+            console.log("Seçilenleri Sil butonuna basıldı.");
+            console.log("Silinecek günler:", [...selectedForDelete]);
+
+            if (!selectedForDelete.length) {
+                notify("Silinecek etkinlik seçmediniz.", "warning");
+                console.log("Hata: Silinecek gün seçilmedi.");
+                return;
+            }
+
+            notify(`Etkinlikler (${selectedForDelete.length} gün) siliniyor...`, "info");
+            console.log("google.script.run.deleteEvents çağırılıyor...", {
+                dates: selectedForDelete,
+                user: currentUser
+            });
+
+            // --- APPS SCRIPT ÇAĞRISI: DELETE EVENTS ---
+            google.script.run
+                .withSuccessHandler((res) => {
+                    console.log("deleteEvents Success:", res);
+                    let deletedCount = 0;
+                    let failedCount = 0;
+                    let messages = [];
+
+                    if (Array.isArray(res)) {
+                        res.forEach((r) => {
+                            if (r.success && r.date) { // Başarılı ve silinen tarihi döndüyse
+                                // events dizisinden başarıyla silinenleri kaldır
+                                events = events.filter(
+                                    (e) => !(e.date === r.date && e.user === currentUser) // Kullanıcıya ve tarihe göre filtrele
+                                );
+                                deletedCount++;
+                            } else {
+                                failedCount++;
+                                messages.push(r.message || `Silinemedi: ${r.date || 'Bilinmeyen Tarih'}`);
+                            }
+                        });
+                    } else {
+                        console.error("deleteEvents Apps Script yanıtı dizi değil veya beklenmedik formatta:", res);
+                        notify("Etkinlik silme işlemi tamamlandı ancak sunucudan beklenmedik yanıt geldi.", "warning");
+                    }
+
+
+                    if (deletedCount > 0) {
+                        notify(`${deletedCount} etkinlik silindi.`, "success");
+                    }
+                    if (failedCount > 0) {
+                        notify(`${failedCount} etkinlik silinemedi: ${messages.join('; ')}`, "warning");
+                    } else if (deletedCount === 0 && selectedForDelete.length > 0) {
+                        // Seçilen silinecek gün vardı ama hiç silinmedi
+                        if (res.length === 0) {
+                            notify("Etkinlik silme işlemi başarısız oldu (Apps Script boş yanıt döndürdü).", "danger");
+                        } else {
+                            // success=true döndü ama deletedCount 0 kaldıysa, eşleşme bulunamadı veya size ait değildi
+                            notify("Seçilenseçilen silinecek etkinliklerden hiçbiri bulunamadı veya size ait değil.", "warning");
+                        }
+                    }
+
+
+                    clearSelections(); // Seçimleri temizle
+                    // events dizisi güncellendi, UI'ı yeniden çiz
+                    renderCalendar();
+                    updateRemainingDays();
+
+                })
+                .withFailureHandler((error) => {
+                    console.error("Etkinlik silme hatası (Apps Script):", error);
+                    notify("Etkinlikler silinirken bir hata oluştu (Apps Script hatası).", "danger");
+                    // Hata durumunda etkinlik listesini yeniden yüklemek iyi olabilir
+                    loadEvents(); // Etkinlikleri tekrar yükleyerek state'i senkronize et
+                    clearSelections(); // Hata olsa da seçimi temizle
+                })
+                // Apps Script tarafında `deleteEvents` fonksiyonunun çağrılması
+                .deleteEvents(selectedForDelete, currentUser);
+        };
+
+        function loadEvents() {
+            console.log("Etkinlikler yükleniyor...");
+            calCont.innerHTML = '<div class="text-center py-3 text-muted">Yükleniyor...</div>';
+            // notification alanını temizle yükleme sırasında
+            notif.innerHTML = "";
+            updateSaveButtonState(); // Yüklenirken kaydet butonunu devre dışı bırak
+
+            // --- APPS SCRIPT ÇAĞRISI: GET EVENTS ---
+            google.script.run
+                .withSuccessHandler((resp) => {
+                    console.log("getEvents Success:", resp);
+                    if (resp && resp.success && Array.isArray(resp.events)) {
+                        // Her etkinlik objesinin date, user, event alanlarına sahip olduğundan emin ol
+                        events = resp.events.map((ev) => ({
+                            date: ev.date || 'Bilinmeyen Tarih', // Eksikse varsayılan değer ata
+                            user: ev.user || 'Bilinmeyen Kullanıcı', // Eksikse varsayılan değer ata
+                            event: ev.event || "Etkinlik", // Eksikse varsayılan değer ata
+                        })).filter(ev => ev.date && /^\d{4}-\d{2}-\d{2}$/.test(ev.date)); // Tarihi YYYY-MM-DD formatında olmayanları filtrele
+
+
+                    } else {
+                        console.error("getEvents Apps Script yanıtı dizi değil veya beklenmedik formatta:", resp);
+                        events = []; // Hatalı formatta geldiyse boş dizi yap
+                        notify("Etkinlik verileri yüklenirken format hatası oluştu.", "danger");
+                    }
+
+                    console.log("Yüklenen etkinlikler:", events);
+                    updateRemainingDays();
+                    renderCalendar(); // Etkinlikler yüklendikten sonra takvimi çiz
+                })
+                .withFailureHandler((error) => {
+                    console.error("Etkinlik yükleme hatası (Apps Script):", error);
+                    calCont.innerHTML = '<div class="text-center py-3 text-danger">Etkinlikler yüklenemedi. Lütfen tekrar deneyin veya konsolu kontrol edin.</div>';
+                    notify("Etkinlikler yüklenirken bir hata oluştu (Apps Script hatası).", "danger");
+                    events = []; // Yükleme hatasında events dizisini boşalt
+                    updateRemainingDays(); // Kalan günü güncelle (0 olacaktır)
+                    updateSaveButtonState(); // Buton durumunu güncelle
+                })
+                // Apps Script tarafında `getEvents` fonksiyonunun çağrılması
+                .getEvents();
+        }
+
+        function renderCalendar() {
+            console.log("Takvim çiziliyor...", `Ay: ${currentMonth + 1}, Yıl: ${currentYear}`);
+            // Mevcut tüm tooltipleri gizle ve yok et
+            document.querySelectorAll('.tooltip').forEach(tip => tip.remove());
+
+            calCont.innerHTML = ""; // Önceki takvimi temizle
+
+
+            const table = document.createElement("table");
+            table.className = "table table-bordered";
+
+            const thead = document.createElement("thead"),
+                trh = document.createElement("tr");
+            ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"] // Gün adlarını kısalt
+                .forEach((d) => {
+                    const th = document.createElement("th");
+                    th.innerText = d;
+                    trh.appendChild(th);
+                });
+            thead.appendChild(trh);
+            table.appendChild(thead);
+
+            const tbody = document.createElement("tbody");
+            const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+            // Haftanın ilk gününü Pazartesi olarak almak için
+            const startIndex = (firstDayOfMonth.getDay() + 6) % 7; // getDay() Pazar=0 döndürür, Pazartesi=1 .. Cumartesi=6. Pazartesi'yi 0 yapmak için +6 % 7
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            let dt = 1; // Gün sayacı
+
+            for (let i = 0; i < 6; i++) { // Maksimum 6 hafta
+                const tr = document.createElement("tr");
+                let weekHasDays = false; // Bu hafta takvime ait gün var mı kontrolü
+
+                for (let j = 0; j < 7; j++) { // Haftanın 7 günü
+                    const td = document.createElement("td");
+
+                    // Ayın ilk gününden önceki boş hücreler VEYA ayın son gününden sonraki boş hücreler
+                    if ((i === 0 && j < startIndex) || dt > daysInMonth) {
+                        td.innerHTML = "";
+                        td.classList.add('empty-day'); // Boş hücre sınıfı ekle
+                        td.style.pointerEvents = 'none'; // Tıklanamaz yap
+                    } else {
+                        weekHasDays = true; // Bu satırda takvime ait bir gün var
+                        const cellDate = new Date(currentYear, currentMonth, dt);
+                        // Saat farklarından etkilenmemek için sadece Yıl-Ay-Gün karşılaştırması yap
+                        const cellDateYMD = new Date(cellDate.getFullYear(), cellDate.getMonth(), cellDate.getDate());
+                        const isToday = cellDateYMD.getTime() === todayYMD.getTime();
+                        const isPastDay = cellDateYMD < todayYMD;
+
+                        const formattedDate = `${cellDate.getFullYear()}-${String(
+                            cellDate.getMonth() + 1
+                        ).padStart(2, "0")}-${String(cellDate.getDate()).padStart(
+                            2,
+                            "0"
+                        )}`;
+
+                        td.setAttribute("data-date", formattedDate);
+                        if (isToday) {
+                            td.classList.add('today-cell');
+                        } // Bugünü işaretle
+
+                        td.innerHTML = `<div>${dt}</div>`; // Gün numarasını div içine al
+
+                        let tooltipContent = ""; // Tooltip içeriği için değişken
+
+                        // Tatil kontrolü
+                        const holidayName = holidays[formattedDate];
+                        if (holidayName) {
+                            td.classList.add("holiday-day");
+                            const hb = document.createElement("div"); // Tatil adı div'i JS ile oluşturuluyor
+                            hb.className = "holiday-name";
+                            hb.innerText = holidayName;
+                            td.appendChild(hb);
+                            tooltipContent += `<strong>Tatil:</strong> ${holidayName}`;
+                        }
+
+                        // Etkinlik kontrolü
+                        const ev = events.find((e) => e.date === formattedDate);
+                        if (ev) {
+                            // Etkinlik için şeffaf kaplama oluştur
+                            const overlayDiv = document.createElement("div");
+                            // Kullanıcı rengini veya varsayılanı kullan
+                            overlayDiv.className = `event-overlay ${userColors[ev.user] || "bg-info"}`;
+
+                            // Kaplama içine etkinlik ve kullanıcı bilgisini ekle
+                            const textContent = document.createElement('div');
+                            // Etkinlik adı varsa onu, yoksa "Etkinlik" yaz
+                            textContent.innerHTML = `${ev.event || 'Etkinlik'}<br><small>${ev.user}</small>`;
+                            overlayDiv.appendChild(textContent);
+
+                            td.appendChild(overlayDiv);
+
+                            // Tooltip içeriğine etkinlik bilgisini ekle
+                            if (tooltipContent) tooltipContent += "<br>"; // Tatil de varsa satır atla
+                            tooltipContent += `<strong>${ev.user}:</strong> ${ev.event || 'Etkinlik'}`;
+
+                            // Eğer etkinlik mevcut kullanıcıya aitse silme butonu ekle
+                            if (ev.user === currentUser) {
+                                const del = document.createElement("button");
+                                del.className = "btn btn-sm btn-danger";
+                                del.innerHTML = '&times;'; // Çarpı işareti
+                                del.setAttribute('aria-label', 'Etkinliği Sil');
+                                // Sil butonuna tıklama olayı
+                                del.onclick = (e) => {
+                                    e.stopPropagation(); // TD'nin click olayını tetiklemesini engelle
+                                    console.log(`Tekil silme butonu tıklandı: ${formattedDate}`);
+                                    // Silinecek olarak işaretle/işareti kaldır
+                                    if (td.classList.contains("to-delete")) {
+                                        td.classList.remove("to-delete");
+                                        selectedForDelete = selectedForDelete.filter(d => d !== formattedDate);
+                                    } else {
+                                        // Seçili (active-day) ise önce seçimden çıkar
+                                        if (selectedDates.includes(formattedDate)) {
+                                            td.classList.remove("active-day");
+                                            selectedDates = selectedDates.filter(d => d !== formattedDate);
+                                            updateSaveButtonState(); // Kaydet butonu durumunu güncelle
+                                        }
+                                        td.classList.add("to-delete");
+                                        selectedForDelete.push(formattedDate);
+                                    }
+                                    // Sil butonunun görünürlüğünü güncelle
+                                    deleteBtn.classList.toggle(
+                                        "d-none",
+                                        selectedForDelete.length === 0
+                                    );
+
+                                    console.log("   Güncel selectedDates (silme butonu):", [...selectedDates]);
+                                    console.log("   Güncel selectedForDelete (silme butonu):", [...selectedForDelete]);
+                                    updateSaveButtonState(); // Kaydet butonu durumunu tekrar güncelle
+                                };
+                                td.appendChild(del);
+                            }
+                        }
+
+                        // Geçmiş günler
+                        if (isPastDay) {
+                            td.classList.add('past-day');
+                            td.style.pointerEvents = 'none'; // Tıklanamaz yap
+                        } else { // Gelecek veya bugün
+                            td.style.cursor = "pointer";
+                            // TD'ye tıklama olayı (seçme/silme için)
+                            td.onclick = () => {
+                                const date = td.getAttribute("data-date");
+                                console.log(`Hücre tıklandı: ${date}`);
+                                const ownEvent = events.find(
+                                    (e) => e.date === date && e.user === currentUser
+                                );
+                                const anyOtherEvent = events.find(
+                                    (e) => e.date === date && e.user !== currentUser
+                                );
+                                // Tıklanan günün geçmiş gün olup olmadığını kontrol et
+                                const clickedDateYMD = new Date(date + 'T00:00:00'); // Saat dilimi farkından kaçın
+                                const isPast = clickedDateYMD < todayYMD;
+
+
+                                console.log(`   Tarih: ${date}, Kendi etkinliğim mi: ${!!ownEvent}, Başka etkinlik var mı: ${!!anyOtherEvent}, Geçmiş gün mü: ${isPast}`);
+
+                                // Geçmiş gün ise tıklamayı engelle
+                                if (isPast) {
+                                    console.log("   -> Geçmiş gün. İşlem yok.");
+                                    return; // Fonksiyonu burada bitir
+                                }
+
+
+                                if (ownEvent) {
+                                    console.log("   -> Kendi etkinliği var. Silmek için seçiliyor/seçim kaldırılıyor.");
+                                    // Seçili (active-day) ise seçimden çıkar
+                                    if (selectedDates.includes(date)) {
+                                        td.classList.remove("active-day");
+                                        selectedDates = selectedDates.filter((d) => d !== date);
+                                    }
+                                    // Silinecek olarak işaretle/işareti kaldır
+                                    if (td.classList.contains("to-delete")) {
+                                        td.classList.remove("to-delete");
+                                        selectedForDelete = selectedForDelete.filter(
+                                            (d) => d !== date
+                                        );
+                                    } else {
+                                        td.classList.add("to-delete");
+                                        selectedForDelete.push(date);
+                                    }
+                                    // Sil butonunun görünürlüğünü güncelle
+                                    deleteBtn.classList.toggle(
+                                        "d-none",
+                                        selectedForDelete.length === 0
+                                    );
+
+                                } else if (anyOtherEvent) {
+                                    console.log(`   -> Başka kullanıcı (${anyOtherEvent.user}) etkinliği var. Seçim engellendi.`);
+                                    notify(`Bu gün ${anyOtherEvent.user} kullanıcısının etkinliği var.`, "warning");
+                                    // Herhangi bir seçili durumu temizle
+                                    td.classList.remove("active-day", "to-delete");
+                                    selectedDates = selectedDates.filter(d => d !== date);
+                                    selectedForDelete = selectedForDelete.filter(d => d !== date);
+                                    deleteBtn.classList.toggle( // Sil butonu durumunu güncelle
+                                        "d-none",
+                                        selectedForDelete.length === 0
+                                    );
+
+                                } else { // Ne kendi etkinliği var ne de başkasının
+                                    console.log("   -> Etkinlik yok. Seçim yapılıyor/seçim kaldırılıyor.");
+                                    // Silinecek olarak işaretli ise, silme işaretini kaldır
+                                    if (td.classList.contains("to-delete")) {
+                                        td.classList.remove("to-delete");
+                                        selectedForDelete = selectedForDelete.filter(
+                                            (d) => d !== date
+                                        );
+                                        deleteBtn.classList.toggle( // Sil butonu durumunu güncelle
+                                            "d-none",
+                                            selectedForDelete.length === 0
+                                        );
+                                    }
+
+                                    // Seçim yap/seçimi kaldır
+                                    if (selectedDates.includes(date)) {
+                                        td.classList.remove("active-day");
+                                        selectedDates = selectedDates.filter((d) => d !== date);
+                                    } else {
+                                        // Sadece gelecekteki boş günleri seçmeye izin ver
+                                        selectedDates.push(date);
+                                        td.classList.add("active-day");
+                                    }
+                                }
+                                console.log("   Güncel selectedDates:", [...selectedDates]);
+                                console.log("   Güncel selectedForDelete:", [...selectedForDelete]);
+                                updateSaveButtonState(); // Kaydet butonu durumunu güncelle
+                            };
+                        }
+
+                        // Tooltip ekle (Geçmiş gün değilse ve içeriği varsa)
+                        if (!isPastDay && tooltipContent) {
+                            td.setAttribute('data-bs-toggle', 'tooltip');
+                            td.setAttribute('data-bs-placement', 'top'); // Tooltip nerede çıksın (top, bottom, left, right)
+                            td.setAttribute('data-bs-html', 'true'); // HTML içeriğe izin ver
+                            td.setAttribute('data-bs-title', tooltipContent);
+                            // Bootstrap tooltip'i başlat
+                            if (!bootstrap.Tooltip.getInstance(td)) {
+                                new bootstrap.Tooltip(td);
+                            }
+                        }
+
+
+                        dt++; // Sonraki güne geç
+                    }
+                    tr.appendChild(td); // Satıra hücreyi ekle
+                }
+
+                // Eğer bu hafta takvime ait hiçbir gün yoksa ve ay bittiyse, döngüyü kır
+                if (!weekHasDays && dt > daysInMonth && i > 0) break;
+
+
+                tbody.appendChild(tr); // Tabloya body'yi ekle
+                // Ay bittiyse ve son satırda gün kalmadıysa döngüyü kır
+                if (dt > daysInMonth && !weekHasDays) break;
+            }
+
+            table.appendChild(tbody); // Tabloya body'yi ekle
+            calCont.appendChild(table); // Takvim container'a tabloyu ekle
+
+            console.log("Takvim çizimi tamamlandı. Seçimleri yeniden uyguluyor...");
+            // Yeniden çizim sonrası varsa seçili günleri UI'da işaretle
+            selectedDates.forEach(date => {
+                const td = calCont.querySelector(`td[data-date="${date}"]`);
+                if (td) {
+                    // Geçmiş gün veya başka kullanıcıya ait etkinlik olan gün seçilemez kuralı render sonrası tekrar kontrol ediliyor
+                    const ev = events.find(e => e.date === date);
+                    // Saat dilimi farkından kaçın
+                    const cellDateYMD = new Date(date + 'T00:00:00');
+                    const isPast = cellDateYMD < todayYMD;
+
+                    if (!isPast && !(ev && ev.user !== currentUser)) {
+                        td.classList.add('active-day');
+                        console.log(`   - ${date} günü için 'active-day' sınıfı uygulandı.`);
+                    } else {
+                        // Seçili olmasına rağmen kural dışı ise listeden çıkar
+                        selectedDates = selectedDates.filter(d => d !== date);
+                        console.warn(`   - ${date} günü kural dışı olduğu için seçimden çıkarıldı (render sonrası).`);
+                    }
+                } else {
+                    console.warn(`   - Hata: ${date} tarihli TD bulunamadı (renderCalendar sonrası seçim).`);
+                }
+            });
+            // Yeniden çizim sonrası varsa silinecek günleri UI'da işaretle
+            selectedForDelete.forEach(date => {
+                const td = calCont.querySelector(`td[data-date="${date}"]`);
+                if (td) {
+                    // Sadece mevcut kullanıcıya ait etkinlik silinebilir kuralı render sonrası tekrar kontrol ediliyor
+                    const ownEvent = events.find(e => e.date === date && e.user === currentUser);
+                    if (ownEvent) {
+                        td.classList.add('to-delete');
+                        console.log(`   - ${date} günü için 'to-delete' sınıfı uygulandı.`);
+                    } else {
+                        // Silinecekler listesinde olmasına rağmen kural dışı ise listeden çıkar
+                        selectedForDelete = selectedForDelete.filter(d => d !== date);
+                        console.warn(`   - ${date} günü kural dışı (kendi etkinliği değil) olduğu için silinecekler listesinden çıkarıldı (render sonrası).`);
+                    }
+                } else {
+                    console.warn(`   - Hata: ${date} tarihli TD bulunamadı (renderCalendar sonrası silinecekler).`);
+                }
+            });
+
+            // Sil butonunun görünürlüğünü yeniden ayarla
+            deleteBtn.classList.toggle(
+                "d-none",
+                selectedForDelete.length === 0
+            );
+            console.log(`Sil butonu görünürlüğü ayarlandı: ${selectedForDelete.length === 0 ? 'Gizli' : 'Görünür'}`);
+
+            updateSaveButtonState(); // Kaydet butonu durumunu yeniden ayarla
+        }
+
+
+        function clearSelections() {
+            console.log("Seçimler temizleniyor...");
+            // Mevcut tüm tooltipleri gizle ve yok et
+            // document.querySelectorAll('.tooltip').forEach(tip => tip.remove());
+
+            selectedDates = [];
+            selectedForDelete = [];
+            // Tüm hücrelerden seçim sınıflarını kaldır
+            calCont
+                .querySelectorAll(".active-day, .to-delete")
+                .forEach((td) => {
+                    td.classList.remove("active-day", "to-delete");
+                });
+            deleteBtn.classList.add("d-none"); // Sil butonunu gizle
+            console.log("Seçim state'leri sıfırlandı.");
+            updateSaveButtonState(); // Kaydet butonu durumunu güncelle
+        }
+
+        function notify(msg, type) {
+            console.log(`Bildirim (${type}): ${msg}`);
+            const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${msg}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Kapat"></button>
+        </div>`;
+            notif.innerHTML = alertHtml; // Sadece son bildirimi göster
+
+            // Belirli bir süre sonra bildirimi otomatik kapat
+            setTimeout(() => {
+                const alertElement = notif.querySelector('.alert');
+                if (alertElement) {
+                    const bsAlert = bootstrap.Alert.getInstance(alertElement);
+                    if (bsAlert) {
+                        bsAlert.dispose(); // dispose kullanmak instance'ı temizler
+                    } else {
+                        alertElement.remove(); // Eğer Bootstrap JS henüz tam yüklenmediyse veya instance alınamadıysa manuel kaldır
+                    }
+                }
+                notif.innerHTML = ""; // Container'ı da temizle
+            }, 5000); // 5 saniye sonra kapat
+        }
+
+        function updateRemainingDays() {
+            const used = events.filter((e) => e.user === currentUser).length;
+            const remaining = 14 - used;
+            remainDays.textContent = `Kalan gün: ${remaining}`;
+            remainDays.className = `badge badge-modern fs-6 ${
+                remaining > 0 ? "bg-primary" : "bg-danger"
+            }`;
+            console.log(`Kalan gün güncellendi: ${remaining}`);
+            updateSaveButtonState();
+        }
+
+        function updateSaveButtonState() {
+            const used = events.filter((e) => e.user === currentUser).length;
+            const remaining = 14 - used;
+            const selectedCount = selectedDates.length;
+            const shouldDisable = selectedCount > remaining || selectedCount === 0;
+            saveBtn.disabled = shouldDisable;
+            console.log(`Kaydet butonu durumu güncellendi: Seçili: ${selectedCount}, Kalan Hak: ${remaining}, Devre Dışı mı: ${shouldDisable}`);
+        }
+
+        // Kullanıcı etkinliklerini modalda gösterme fonksiyonu
+        function showUserEventsInModal(user) {
+            console.log(`${user} kullanıcısının etkinlikleri modalda gösteriliyor.`);
+            const userEvents = events.filter(event => event.user === user);
+
+            userEventsModalTitle.textContent = `${user}'nın Etkinlikleri (${userEvents.length} adet)`;
+
+            userEventsList.innerHTML = '';
+
+            if (userEvents.length === 0) {
+                const li = document.createElement('li');
+                li.textContent = "Bu kullanıcının etkinliği bulunmamaktadır.";
+                userEventsList.appendChild(li);
+            } else {
+                userEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                userEvents.forEach(event => {
+                    const li = document.createElement('li');
+                    li.className = 'event-list-item';
+                    const dateObj = new Date(event.date + 'T00:00:00');
+                    const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}.${String(dateObj.getMonth() + 1).padStart(2, '0')}.${dateObj.getFullYear()}`;
+
+                    li.innerHTML = `<strong>${formattedDate}:</strong> ${event.event || 'Etkinlik'}`;
+                    userEventsList.appendChild(li);
+                });
+            }
+
+            const modalElement = document.getElementById('userEventsModal');
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) {
+                modalInstance.show();
+            } else {
+                const newModalInstance = new bootstrap.Modal(modalElement);
+                newModalInstance.show();
+            }
+            console.log("Modal gösterildi.");
+        }
+
+        // Event Listener: Etkinlikleri Göster butonuna tıklandığında
+        showUserEventsBtn.onclick = () => {
+            const selectedUser = userSearchSelect.value;
+            if (!selectedUser) {
+                notify("Lütfen bir kullanıcı seçin.", "warning");
+                console.log("Kullanıcı seçilmediği için modal gösterilmedi.");
+                return;
+            }
+            showUserEventsInModal(selectedUser);
+        };
+
+        // --- KULLANICI YÖNETİMİ (ADMİN PANELİ) ---
+        function loadUsers() {
+            console.log("Kullanıcılar yükleniyor (loadUsers)...");
+            google.script.run
+                .withSuccessHandler(function (result) {
+                    if (result.success) {
+                        const users = result.users;
+
+                        // Kullanıcı adı selectbox'larını doldur
+                        usernameSel.innerHTML = '<option value="">Seçiniz</option>';
+                        userSearchSelect.innerHTML = '<option value="">Seçiniz</option>';
+                        existingUsersSelect.innerHTML = '<option value="">Seçiniz</option>'; // Admin panel kullanıcı listesi
+
+                        users.forEach(user => {
+                            const option1 = document.createElement('option');
+                            option1.value = user.username;
+                            option1.textContent = `${user.username} (${user.role})`; // Rolü de göster
+                            usernameSel.appendChild(option1);
+
+                            const option2 = document.createElement('option');
+                            option2.value = user.username;
+                            option2.textContent = `${user.username} (${user.role})`; // Rolü de göster
+                            userSearchSelect.appendChild(option2);
+
+                            const option3 = document.createElement('option');
+                            option3.value = user.username;
+                            option3.textContent = `${user.username} (${user.role})`; // Rolü de göster
+                            existingUsersSelect.appendChild(option3);
+                        });
+                        console.log("Kullanıcılar yüklendi (loadUsers):", users);
+                    } else {
+                        notify(result.message || "Kullanıcılar yüklenirken bir hata oluştu.", "danger");
+                        console.error("Hata: Kullanıcılar yüklenemedi (loadUsers).", result.message);
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    notify("Sunucu hatası (loadUsers). Lütfen daha sonra tekrar deneyin.", "danger");
+                    console.error("Sunucu hatası (loadUsers):", err);
+                })
+                .getUsers();
+        }
+
+        addUserBtn.onclick = () => {
+            const newUsername = newUsernameInput.value;
+            const newPin = newPinInput.value;
+            const newRole = newRoleSelect.value;
+
+            if (!newUsername || !newPin) {
+                notify("Kullanıcı adı ve pin kodu zorunludur.", "warning");
+                return;
+            }
+
+            google.script.run
+                .withSuccessHandler(function (result) {
+                    if (result.success) {
+                        notify(result.message, "success");
+                        newUsernameInput.value = "";
+                        newPinInput.value = "";
+                        newRoleSelect.value = "Kullanıcı"; // Varsayılan role geri dön
+                        adminPanelModalEl.hide(); // Modal'ı kapat
+                        loadUsers(); // Kullanıcı listesini yenile
+                    } else {
+                        notify(result.message || "Kullanıcı eklenirken bir hata oluştu.", "danger");
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    notify("Sunucu hatası (addUserBtn). Lütfen daha sonra tekrar deneyin.", "danger");
+                    console.error("Sunucu hatası (addUserBtn):", err);
+                })
+                .addUser(newUsername, newPin, newRole);
+        };
+
+        deleteUserBtn.onclick = () => {
+            const existingUsername = existingUsersSelect.value;
+
+            if (!existingUsername) {
+                notify("Silinecek kullanıcıyı seçin.", "warning");
+                return;
+            }
+
+            google.script.run
+                .withSuccessHandler(function (result) {
+                    if (result.success) {
+                        notify(result.message, "success");
+                        existingUsersSelect.value = ""; // Seçimi temizle
+                        loadUsers(); // Kullanıcı listesini yenile
+                    } else {
+                        notify(result.message || "Kullanıcı silinirken bir hata oluştu.", "danger");
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    notify("Sunucu hatası (deleteUserBtn). Lütfen daha sonra tekrar deneyin.", "danger");
+                    console.error("Sunucu hatası (deleteUserBtn):", err);
+                })
+                .deleteUser(existingUsername);
+        };
+
+        resetPinBtn.onclick = () => {
+            const existingUsername = existingUsersSelect.value;
+
+            if (!existingUsername) {
+                notify("Pin'i sıfırlanacak kullanıcıyı seçin.", "warning");
+                return;
+            }
+
+            google.script.run
+                .withSuccessHandler(function (result) {
+                    if (result.success) {
+                        notify(result.message, "success");
+                        existingUsersSelect.value = ""; // Seçimi temizle
+                    } else {
+                        notify(result.message || "Pin sıfırlanırken bir hata oluştu.", "danger");
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    notify("Sunucu hatası (resetPinBtn). Lütfen daha sonra tekrar deneyin.", "danger");
+                    console.error("Sunucu hatası (resetPinBtn):", err);
+                })
+                .resetPin(existingUsername);
+        };
+
+        // --- PİN DEĞİŞTİRME ---
+        changePinBtn.onclick = () => {
+            changePinModalEl.show();
+        };
+
+        saveNewPinBtn.onclick = () => {
+            const currentPin = currentPinInput.value;
+            const newPin1 = newPin1Input.value;
+            const newPin2 = newPin2Input.value;
+
+            if (!currentPin || !newPin1 || !newPin2) {
+                pinChangeError.textContent = "Tüm alanları doldurun.";
+                pinChangeError.classList.remove("d-none");
+                return;
+            }
+
+            if (newPin1 !== newPin2) {
+                pinChangeError.textContent = "Yeni pinler eşleşmiyor.";
+                pinChangeError.classList.remove("d-none");
+                return;
+            }
+
+            google.script.run
+                .withSuccessHandler(function (result) {
+                    if (result.success) {
+                        notify(result.message, "success");
+                        changePinModalEl.hide();
+                        currentPinInput.value = "";
+                        newPin1Input.value = "";
+                        newPin2Input.value = "";
+                        pinChangeError.classList.add("d-none");
+                    } else {
+                        pinChangeError.textContent = result.message || "Pin değiştirilirken bir hata oluştu.";
+                        pinChangeError.classList.remove("d-none");
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    notify("Sunucu hatası (saveNewPinBtn). Lütfen daha sonra tekrar deneyin.", "danger");
+                    console.error("Sunucu hatası (saveNewPinBtn):", err);
+                })
+                .changePin(currentUser, newPin1);
+        };
+
+        // --- SAYFA YÜKLENDİĞİNDE YAPILACAK İŞLEMLER ---
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("Sayfa yüklendi.");
+
+            loginSec.classList.remove("d-none");
+            calSec.classList.add("d-none");
+
+            // DOM yüklendiğinde yıl seçiciyi doldur
+            populateYearSelect();
+            yearSelect.value = currentYear; // Başlangıçta mevcut yılı seçili yap
+
+            // Flatpickr başlangıç değerini set et
+            fp.setDate(new Date(currentYear, currentMonth, 1), true);
+
+            // Kullanıcıları yükle (giriş ekranı için)
+            loadUsers();
+
+            // Modal'lar için event listener'lar (temizleme)
+            adminPanelModal.addEventListener('hidden.bs.modal', () => {
+                newUsernameInput.value = "";
+                newPinInput.value = "";
+                newRoleSelect.value = "Kullanıcı";
+                existingUsersSelect.value = "";
+            });
+
+            changePinModal.addEventListener('hidden.bs.modal', () => {
+                currentPinInput.value = "";
+                newPin1Input.value = "";
+                newPin2Input.value = "";
+                pinChangeError.classList.add("d-none");
+            });
+        });
+    </script>
+
+</body>
+
+</html>
